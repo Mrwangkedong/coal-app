@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport"
+			content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+		<link href="../css/mui.min.css" rel="stylesheet" />
+		<script src="https://cdn.staticfile.org/vue/2.4.2/vue.min.js"></script>
+		<script src="https://cdn.staticfile.org/axios/0.18.0/axios.min.js"></script>
+		<script src="../js/mui.min.js"></script>
+	</head>
+	<body>
+		<!-- 导航条 -->
+		<header class="mui-bar mui-bar-nav">
+		  <a class="mui-action-back mui-icon mui-icon-left-nav mui-pull-left" href="walletInfo.html"></a>
+		  <h1 class="mui-title">历史账单</h1>
+		</header>
+		<br /><br />
+		<!-- 订单表 -->
+		<ul class="mui-table-view" id="big_ul">
+		    <li class="mui-table-view-cell mui-media">
+		        <a href="#">
+		            <!-- <img class="mui-media-object mui-pull-right" src="../images/weixin.png"> -->
+					<p class="mui-media-object mui-pull-right">+13200</p>
+		            <div class="mui-media-body">
+		                2020/12/3/21:23
+		                <p class='mui-ellipsis'>大秀山洗煤厂</p>
+		            </div>
+		        </a>
+		    </li>
+			<li class="mui-table-view-cell mui-media" v-for="list in lists">
+			    <a href="javascript:;">
+			        <!-- <img class="mui-media-object mui-pull-right" src="../images/weixin.png"> -->
+					<p class="mui-media-object mui-pull-right" style="font;" 
+							v-if="list.bill_type == 1">+{{list.bill_money}}</p>
+					<p class="mui-media-object mui-pull-right" style="font;" v-else>-{{list.bill_money}}</p>
+			        <div class="mui-media-body">
+			            {{list.bill_data.slice(0,16)}}
+			            <p class='mui-ellipsis'>{{list.user2_name}}</p>
+			        </div>
+			    </a>
+			</li>
+		</ul>
+		<div id="aapp"></div>
+	</body>
+</html>
+<script>
+	mui.init();
+	mui.plusReady(function () {
+	    var self = plus.webview.currentWebview();
+		var user_id = Number(self.user_id);
+		console.log("账单信息表收到user_id：",user_id);
+		dataReady(user_id);
+	})
+	
+	function dataReady(user_id){
+		new Vue({
+			el:'#big_ul',
+			data() {
+				return {
+					lists: null
+				}
+			},
+			mounted() {
+				// 获得订单的具体信息
+				axios.post('http://192.168.43.30:8081/getUserBillList', "user1_id=" + user_id+"&bill_state="+1)
+					.then(response => (this.lists = response['data']))
+					.catch(function(error) {
+						alert("获得订单的具体信息出错");
+					});
+			},
+			
+		})
+	}
+</script>

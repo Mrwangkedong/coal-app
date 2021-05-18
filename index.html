@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport"
+			content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+		<title>coal</title>
+		<script src="js/mui.min.js"></script>
+		<link href="css/mui.min.css" rel="stylesheet" />
+		<script type="text/javascript" src="http://api.map.baidu.com/api?v=3.0&ak=fCP53ZyuQkjn4XVYM2qZNRYGI3s1kmYT"></script>
+		<script src = "https://cdn.staticfile.org/vue/2.4.2/vue.min.js" >
+		</script>
+		<script src="js/common.js"></script>
+		<script src="https://cdn.staticfile.org/axios/0.18.0/axios.min.js"></script>
+		<script src="js/pageJump.js"></script>
+		<script src="js/sessionCheak.js"></script>
+		</script>
+		<style type="text/css">
+			html {
+				height: 100%
+			}
+			body {
+				height: 100%;
+				margin: 0px;
+				padding: 0px
+			}
+			#map {
+				height: 40%;
+				padding-left: 50px;
+			}
+		</style>
+
+	</head>
+
+	<body>
+		<header class="mui-bar mui-bar-nav">
+			<a class="mui-action-back mui-icon mui-icon-left-nav mui-pull-left">123</a>
+		</header>
+
+		<div id="map"></div>
+		<input type="text" id="address" />
+		<div id="big_div">
+			<div class="mui-card">
+				<!--页眉，放置标题-->
+				<div class="mui-card-header mui-card-media">
+					<img src="photo/touxiang.png" />
+					<div class="mui-media-body">
+						{{person_info.d_name}}
+						<p>最近登录时间 2021-04-9 8:30</p>
+					</div>
+				</div>
+				<div class="mui-card-footer">
+					<button type="button" class="mui-btn mui-btn-success" style="width: 163px;height: 130px;"
+						v-bind:id="person_info.id" v-bind:title="orderNow_info.factory_orderid"
+						v-on:click="go_orderNow">查看当前订单</button>
+		
+					<button type="button" class="mui-btn mui-btn-primary" style="width: 162px;height: 130px;"
+						id="orderWaitList" v-on:click="go_orderWaitList">查看可接订单</button>
+				</div>
+			</div>
+			
+			<button ><a href="regist.html">测试页面</a></button>
+			<button ><a href="login.html">登录页面</a></button>
+			<button> <a href="ztest.html">ztest</a></button>
+		
+		
+			<nav class="mui-bar mui-bar-tab">
+				<a class="mui-tab-item mui-active" id="shouye" style="touch-action: none;" v-on:click="go_shouye">
+					<span class="mui-icon mui-icon-home"></span>
+					<span class="mui-tab-label">首页</span>
+				</a>
+				<a class="mui-tab-item" id="history_order" style="touch-action: none;" v-on:click="go_history_order">
+					<span class="mui-icon mui-icon-settings"></span>
+					<span class="mui-tab-label">历史订单</span>
+				</a>
+				<a class="mui-tab-item" id="aboutme" style="touch-action: none;" v-on:click="go_aboutme">
+					<span class="mui-icon mui-icon-contact"></span>
+					<span class="mui-tab-label">个人中心</span>
+				</a>
+			</nav>
+	</body>
+	<script src="js/jquery-3.4.1.min.js"></script>
+	<script type="text/javascript" charset="utf-8">
+		mui.init();
+		var driver_id_push;
+		var driver_id;
+		
+		//手机页面初始化时
+		mui.plusReady(function () {
+			//缓存当前是否有用户登录
+			sessionCheck();
+			// localStorage.setItem("driver_id",1);
+			driver_id = Number(localStorage.driver_id);  //从缓冲中读取到driver_id	
+		    driver_id_push = driver_id;  //从缓冲中读取到driver_id，用于处理消息推送
+			console.log("读取到的driver_id："+driver_id);
+			var self = plus.webview.currentWebview();
+			console.log("plus首页接收driver_id："+self.driver_id);
+			//获取cid
+			var cid = plus.push.getClientInfo().clientid;
+			console.log("设备cid："+cid);
+			DataReady(driver_id,cid);
+		});
+// /***************************处理消息推送****************************************************************************************************************************************		
+		// 监听plusready事件
+		//消息推送
+		var message = null;
+		document.addEventListener( "plusready", function(){
+			message = document.getElementById("message");
+			// 监听点击消息事件
+			plus.push.addEventListener( "click", function( msg ) {
+				// 判断是从本地创建还是离线推送的消息
+				switch( msg.payload ) {
+					case "LocalMSG":
+						console.log( "点击本地创建消息启动：" );
+					break;
+					default:
+						console.log( "点击离线推送消息启动：");
+					break;
+				}
+				// // 提示点击的内容
+				// plus.nativeUI.alert( msg.content );
+				// 处理其它数据
+				logoutPushMsg(msg ,driver_id_push);
+			}, false );
+			// 监听在线消息事件
+			plus.push.addEventListener( "receive", function( msg ) {
+				if ( msg.aps ) {  // Apple APNS message
+					console.log( "接收到在线APNS消息：" );
+				} else {
+					console.log( "接收到在线透传消息：" );
+				}
+				logoutPushMsg( msg ,driver_id_push);
+			}, false );
+		}, false );
+		
+		/**
+		 * 日志输入推送消息内容
+		 */
+		function logoutPushMsg( msg , driver_id) {
+			console.log( "title: "+msg.title );
+			console.log( "content: "+msg.content );
+			if ( msg.payload ) {
+				if ( typeof(msg.payload)=="string" ) {
+					console.log( "payload(String): "+msg.payload );
+				} else {
+					var pushPayload = (msg.payload);
+					console.log( "payload(JSON): "+JSON.stringify(pushPayload) );
+					payloadReduce(pushPayload,driver_id,msg.content);
+				}
+			} else {
+				console.log( "payload: undefined" );
+			}
+			if ( msg.aps ) {
+				console.log( "aps: "+JSON.stringify(msg.aps) );
+			}
+		}
+		
+		//处理从推送过来的数据
+		function payloadReduce(pushPayload,driver_id,content){
+			//action分为去到新发布订单详情页【orderWait】，被修改订单后进入当前订单详情页【orderNow】
+			var action = pushPayload['action'];
+			if(action == "orderWait"){
+				let fac_orderid = pushPayload['fac_orderid'] //获得工厂订单id
+				var params = {
+					fac_orderid:fac_orderid,
+					driver_id:driver_id,
+				};
+				goPage2('pages/orderWaitInfo',params);
+			}
+			if(action == 'orderNow'){
+				mui.alert(content);
+			}
+		}
+		
+		
+// /***************************初始接收司机相关信息****************************************************************************************************************************************
+		//接收司机个人信息，以及司机的当前订单号（传给当前订单页面）
+		function DataReady(driver_id,clientid) {
+			vm = new Vue({
+				el: '#big_div',
+				data() {
+					return {
+						person_info: null,
+						orderNow_info: null,
+						orderNow_route:null
+					}
+				},
+				mounted() {
+					axios.post('http://192.168.43.30:8081/getDriverMsg', "d_id=" + driver_id)
+						.then(response => (this.person_info = response['data']))
+						.catch(function(error) {
+							mui.toast("获得司机个人信息出错");
+						});
+					axios.post('http://192.168.43.30:8081/getOrderNow', "d_id=" + driver_id)
+						.then(response => (this.orderNow_info = response['data']))
+						.catch(function(error) {
+							mui.toast("获得司机当前订单出错");
+						});
+					axios.post('http://192.168.43.30:8081/getOrderNowRoute', "d_id=" + driver_id)
+						.then(response => (this.orderNow_route = response['data']))
+						.catch(function(error) {
+							mui.toast("获得司机当前订单工厂位置出错");
+						});
+				},
+				watch:{
+					person_info:function(){
+						this.$nextTick(function(){
+							if (this.person_info.d_cid == null || this.person_info.d_cid != clientid) {
+								editCid(this.person_info.id,clientid);
+							}else{
+								mui.toast("cid一致");
+							}
+						});
+					},
+					orderNow_route:function(){
+						this.$nextTick(function(){
+							if (this.orderNow_route == null || this.orderNow_route == "") {
+								console.log("当前用户没有正在进行订单");
+							} else{
+								routeReady(this.orderNow_route.ff_factory_longitude,this.orderNow_route.ff_factory_latitude,this.orderNow_route.ft_factory_longitude,this.orderNow_route.ft_factory_latitude);
+							}
+						})
+					},
+				},
+				methods: {
+					go_orderNow: function() {
+						var params = {
+									driver_id: this.person_info.id,
+									factory_orderid: this.orderNow_info.factory_orderid,
+								}
+						if (this.orderNow_info.factory_orderid != 0 && this.orderNow_info!="") {
+							goPage2("pages/orderNow",params);
+						} else {
+							mui.alert("当前未接收订单");
+						}
+		
+					},
+					go_orderWaitList: function() {
+						//需要传递的参数orderWaitList
+						var params = {
+								driver_id: this.person_info.id,
+								orderNow_info:this.orderNow_info
+							}
+						//进行页面跳转
+						goPage2("pages/orderWaitList",params);
+					},
+					go_shouye: function() {
+						var params = {driver_id:this.person_info.id}
+						goPage2("index",params);
+					},
+					go_history_order: function() {
+						var params = {driver_id:this.person_info.id}
+						goPage("pages/history_order",params);
+					},
+					go_aboutme: function() {
+						var params = {driver_id:this.person_info.id}
+						goPage("pages/aboutme",params);
+					},
+				},
+			});
+		
+			
+		}
+// /***************************地图规划****************************************************************************************************************************************		
+		var map = new BMap.Map("map"); //地图显示位置
+		var gc = new BMap.Geocoder(); //将坐标转换成地址		
+		//页面初始化时,地图功能
+		$(function() {
+			//初始化地图 默认加载北京天安门
+			var point = new BMap.Point(116.40369689697, 39.914934528088);
+			map.centerAndZoom(point, 16); //初始化地图，point为中心点，缩放级别为16
+			$("#address").val("默认加载北京天安门，请点击定位按钮生效！");
+			//调用定位函数
+			getLocation();
+		})
+		
+		//路线规划
+		function routeReady(ff_factory_longitude,ff_factory_latitude,ft_factory_longitude,ft_factory_latitude){
+			//工厂起始点和终点
+			var p1 = new BMap.Point(ff_factory_longitude, ff_factory_latitude); //始发地
+			var p2 = new BMap.Point(ft_factory_longitude, ft_factory_latitude); //目的地
+			//添加
+			map.addOverlay(new BMap.Marker(p1));
+			map.addOverlay(new BMap.Marker(p2));
+			
+			//设置路线
+			var driving = new BMap.DrivingRoute(map, {
+				renderOptions: {
+					map: map,
+					autoViewport: true
+				}
+			});
+			driving.search(p1, p2);
+		}
+		
+
+		// 定位函数
+		function getLocation() {
+			//判断手机浏览器是否支持定位 
+			if (navigator.geolocation) {
+				var geolocation = new BMap.Geolocation(); //创建定位实例
+				geolocation.getCurrentPosition(showPosition, {
+					enableHighAccuracy: true
+				}); //enableHighAccuracy 要求浏览器获取最佳结果
+			} else {
+				console.log("不支持定位啦")
+				map.addControl(new BMap.GeolocationControl()); //添加定位控件 支持定位
+			}
+		}
+
+		//获取定位信息
+		function showPosition(position) {
+			var la = position.latitude;
+			var lo = position.longitude;
+			
+			let d_id = Number(localStorage.driver_id);
+			
+			/*
+			* 此处上传当前位置信息
+			* */
+			mui.ajax('http://192.168.43.30:8081/editJinWei',{
+				data:{
+					d_id:d_id,
+					order_longitude:lo,
+					order_latitude:la,
+				},
+				dataType:'json',//服务器返回json格式数据
+				type:'post',//HTTP请求类型
+				timeout:10000,//超时时间设置为10秒；
+				success:function(data){
+					if (data == 1) {
+						mui.toast("当前位置更新成功");
+					} else if(data === 0){
+						mui.toast("当前位置更新失败");
+					}
+				},
+				error:function(xhr,type,errorThrown){
+					mui.toast("当前位置更新错误！！");
+				}
+			});
+			
+
+			//新建中心点 并将地图中心移动过去
+			var centerPoint = new BMap.Point(lo, la);
+			map.panTo(centerPoint);
+			map.setCenter(centerPoint);
+			gc.getLocation(centerPoint, function(rs) {
+				var addComp = rs.addressComponents;
+				var mapAddress = addComp.province + addComp.city + addComp.district + addComp.street + addComp
+					.streetNumber;
+				$("#address").val(mapAddress)
+			});
+			//新建标注
+			var mk = new BMap.Marker(centerPoint);
+			//			mk.disableDragging(); // 不可拖拽
+			map.addOverlay(mk);
+		}
+		
+		
+// /***************************CId更改/缓存检查****************************************************************************************************************************************
+		//更改cid
+		function editCid(driver_id,newCid){
+			mui.ajax('http://192.168.43.30:8081/editDriverCid',{
+				data:{
+					driver_id:driver_id,
+					newCid:newCid,
+				},
+				dataType:'json',//服务器返回json格式数据
+				type:'post',//HTTP请求类型
+				timeout:10000,//超时时间设置为10秒；
+				success:function(data){
+					if (data == 1) {
+						location.reload(); //更新
+					} else{
+						plus.nativeUI.toast("设备连接失败，请重新登录【cid错误！】")
+					}
+				},
+				error:function(xhr,type,errorThrown){
+					
+				}
+			});
+		}
+		
+		
+		
+	</script>
+
+</html>

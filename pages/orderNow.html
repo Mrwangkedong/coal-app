@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport"
+			content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+		<link href="../css/mui.min.css" rel="stylesheet" />
+		<link href="../fonts/iconfont.css" rel="stylesheet" />
+		<script src="../js/sessionCheak.js"></script>
+		<script src="https://cdn.staticfile.org/vue/2.4.2/vue.min.js"></script>
+		<script src="https://cdn.staticfile.org/axios/0.18.0/axios.min.js"></script>
+		<script src="../js/mui.min.js"></script>
+		<title></title>
+	</head>
+	<body>
+		<!-- 头部信息 -->
+		<div class="head">
+			<header class="mui-bar mui-bar-nav">
+				<a class="mui-action-back mui-icon mui-icon-left-nav mui-pull-left" href="history_order.html"></a>
+				<h1 class="mui-title">当前订单详情</h1>
+			</header>
+		</div>
+		<br /><br />
+
+
+		<!-- 具体内容 -->
+		<!-- 九宫格 -->
+		<ul class="mui-table-view mui-grid-view mui-grid-9" id="big_ul">
+			<li class="mui-table-view-cell mui-media mui-col-xs-6">
+				<a href="#">
+					<h3>{{names.ft_name}}</h3>
+					<div class="mui-media-body">买家厂家</div>
+				</a>
+			</li>
+			<li class="mui-table-view-cell mui-media mui-col-xs-6">
+				<a href="#">
+					<h3>{{names.ff_name}}</h3>
+					<div class="mui-media-body">卖家厂家</div>
+				</a>
+			</li>
+			<li class="mui-table-view-cell mui-media mui-col-xs-6">
+				<a href="#">
+					<h3 style="font-size: 18px;">{{order_startdate}}</h3>
+					<div class="mui-media-body">订单开始时间</div>
+				</a>
+			</li>
+			<li class="mui-table-view-cell mui-media mui-col-xs-6">
+				<a href="#">
+					<h3 style="font-size: 18px;">{{order_arriveffactorydate}}</h3>
+					<div class="mui-media-body">空车称重时间</div>
+				</a>
+			</li>
+			<li class="mui-table-view-cell mui-media mui-col-xs-6">
+				<a href="#">
+					<h3 style="font-size: 18px;">{{order_leaveffactorydate}}</h3>
+					<div class="mui-media-body">满车离厂时间</div>
+				</a>
+			</li>
+			<li class="mui-table-view-cell mui-media mui-col-xs-6">
+				<a href="#">
+					<h3 style="font-size: 18px;">{{order_enddate}}</h3>
+					<div class="mui-media-body">满车到厂时间</div>
+				</a>
+			</li>
+			<li class="mui-table-view-cell mui-media mui-col-xs-6">
+				<a href="#">
+					<h2>{{list.order_pz}}</h2>
+					<div class="mui-media-body">皮重（吨）</div>
+				</a>
+			</li>
+			<li class="mui-table-view-cell mui-media mui-col-xs-6">
+				<a href="#">
+					<h2>{{list.order_mz}}</h2>
+					<div class="mui-media-body">离厂毛重（吨）</div>
+				</a>
+			</li>
+			<li class="mui-table-view-cell mui-media mui-col-xs-6">
+				<a href="#">
+					<h2>{{list.order_mz2}}</h2>
+					<div class="mui-media-body">到厂毛重（吨）</div>
+				</a>
+			</li>
+			<li class="mui-table-view-cell mui-media mui-col-xs-6">
+				<a href="#">
+					<h2>{{names.facOrderInfo.order_goodprice}}</h2>
+					<div class="mui-media-body">单价（￥/吨）</div>
+				</a>
+			</li>
+			<li class="mui-table-view-cell mui-media mui-col-xs-6">
+				<a href="#">
+					<h2>{{goodWeight}}</h2>
+					<div class="mui-media-body">货物重量（吨）</div>
+				</a>
+			</li>
+			<li class="mui-table-view-cell mui-media mui-col-xs-6">
+				<a href="#">
+					<h2>--</h2>
+					<div class="mui-media-body">运费（￥）</div>
+				</a>
+			</li>
+
+
+		</ul>
+
+
+
+	</body>
+</html>
+
+
+<script>
+	mui.init();
+
+	mui.plusReady(function() {
+		//检查当前session是否存在用户id
+		sessionCheck();
+		
+		var driver_id = Number(localStorage.driver_id);  //从缓冲中读取到driver_id	
+		var self = plus.webview.currentWebview();
+		DataReady(Number(self.order_id), Number(self.factory_orderid));
+		//关闭等待框               
+		plus.nativeUI.closeWaiting();
+
+		//显示当前页面          
+		mui.currentWebview.show();
+
+	});
+
+	function DataReady(orderID, facOrderId) {
+		new Vue({
+			el: '#big_ul',
+			data() {
+				return {
+					list: null,
+					names: null
+				}
+			},
+			mounted() {
+				// 获得订单的具体信息
+				axios.post('http://192.168.43.30:8081/getDriOrderInfo', "order_id=" + orderID)
+					.then(response => (this.list = response['data']))
+					.catch(function(error) {
+						alert("获得订单的具体信息出错");
+					});
+				// 获得订单双方的厂家名称
+				axios.post('http://192.168.43.30:8081/getFacNames', "factory_orderid=" + facOrderId)
+					.then(response => (this.names = response['data']))
+					.catch(function(error) {
+						alert("获得订单双方的厂家名称出错！");
+					});
+
+			},
+			computed: {
+				// 货物重量
+				goodWeight:function(){
+					if (this.list.order_mz2 != 0) {
+						return this.list.order_mz2 - this.list.order_pz;
+					}else{
+						if (this.list.order_mz != 0) {
+							return this.list.order_mz - this.list.order_pz;
+						} else{
+							return "--";
+						}
+					}
+				},
+				//接单时间
+				order_startdate:function(){
+					console.log(this.list.order_startdate);
+					if (this.list.order_startdate == null) {
+						return '--';
+					} else{
+						return String(this.list.order_startdate).slice(0,16);
+					}
+				},
+				//空车入厂时间
+				order_arriveffactorydate:function(){
+					if (this.list.order_arriveffactorydate == null) {
+						return '--';
+					} else{
+						return String(this.list.order_arriveffactorydate).slice(0,16);
+					}
+				},
+				//满车离厂时间
+				order_leaveffactorydate:function(){
+					if (this.list.order_leaveffactorydate == null) {
+						return '--';
+					} else{
+						return String(this.list.order_leaveffactorydate).slice(0,16);
+					}
+				},
+				//订单结束时间
+				order_enddate:function(){
+					if (this.list.order_enddate == null) {
+						return '--';
+					} else{
+						return String(this.list.order_enddate).slice(0,16);
+					}
+				},
+			}
+		})
+	}
+</script>

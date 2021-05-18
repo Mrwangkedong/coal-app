@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport"
+			content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+		<link href="../css/mui.min.css" rel="stylesheet" />
+		<script src="../js/mui.min.js"></script>
+		<script src="../js/pageJump.js"></script>
+		<script src="https://cdn.staticfile.org/vue/2.4.2/vue.min.js"></script>
+		<script src="https://cdn.staticfile.org/axios/0.18.0/axios.min.js"></script>
+	</head>
+	<body>
+		<!-- 导航条 -->
+		<header class="mui-bar mui-bar-nav">
+			<a class="mui-action-back mui-icon mui-icon-left-nav mui-pull-left" href="shouye.html"></a>
+			<h1 class="mui-title">待接受订单</h1>
+		</header>
+		<br /><br />
+
+		<!--下拉刷新容器-->
+		<div id="pullrefresh" class="mui-content mui-scroll-wrapper">
+			<div class="mui-scroll">
+				<!-- 订单表 -->
+				<ul class="mui-table-view" id="big_ul">
+					<li class="mui-table-view-cell mui-media" v-for="list in lists" v-bind:id="list.facOrderId">
+						<a href="javascript:;">
+							<p class="mui-media-object mui-pull-right">运费:{{list.facOrderGoodPrice}}</p>
+							<div class="mui-media-body">
+								{{list.facOrderFF_name}}-->{{list.facOrderFT_name}}
+								<p class='mui-ellipsis' v-if="list.facOrderCarClass == 1">车辆类型：半挂</p>
+								<p class='mui-ellipsis' v-else>车辆类型：半挂</p>
+							</div>
+						</a>
+					</li>
+				</ul>
+			</div>
+		</div>
+
+
+
+	</body>
+</html>
+
+<script>
+	mui.init({
+		pullRefresh: {
+			container: '#pullrefresh',
+			down: {
+				style: 'circle',
+				callback: pulldownRefresh
+			},
+		}
+	});
+	
+	var driver_id = Number(localStorage.getItem("driver_id"));
+
+	mui.plusReady(function() {
+		var self = plus.webview.currentWebview();
+		var driver_id = Number(localStorage.getItem("driver_id"));
+		var orderNow_info = this.orderNow_info;
+		dataReady();
+		console.log("待接受订单列表收到driver_id：" + driver_id);
+		console.log("待接受订单列表收到orderNow_info：" + orderNow_info);
+	})
+
+
+	/**
+	 * 数据获取
+	 */
+	function dataReady() {
+		var vm = new Vue({
+			el: '#big_ul',
+			data() {
+				return {
+					lists: null
+				}
+			},
+			mounted() {
+				axios.get('http://192.168.43.30:8081/getOrderWaitInfo')
+					.then(response => (this.lists = response['data']))
+					.catch(function(error) {
+						alert("获得当前可接订单的具体信息出错");
+					});
+			},
+
+		});
+
+
+		//等待数据加载完毕之后，给每一个li绑定事件
+		vm.$watch("lists", function() {
+			var Lis = document.getElementsByClassName('mui-table-view-cell mui-media');
+			for (var i = 0; i < Lis.length; i++) {
+				Lis[i].addEventListener('tap', function() {
+					var params = {
+						fac_orderid: this.id,
+						driver_id: driver_id,
+					};
+					goPage2("orderWaitInfo", params);
+				})
+			}
+		})
+	}
+
+	/**
+	 * 下拉刷新具体业务实现
+	 */
+	function pulldownRefresh() {
+		setTimeout(function() {
+			dataReady();
+			mui('#pullrefresh').pullRefresh().endPulldownToRefresh();
+			mui.toast("加载完成");
+		}, 1500);
+	}
+</script>

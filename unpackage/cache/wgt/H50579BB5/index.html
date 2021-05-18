@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport"
+			content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+		<title>coal</title>
+		<script src="js/mui.min.js"></script>
+		<link href="css/mui.min.css" rel="stylesheet" />
+		<script type="text/javascript" src="http://api.map.baidu.com/api?v=3.0&ak=fCP53ZyuQkjn4XVYM2qZNRYGI3s1kmYT"></script>
+		<script src = "https://cdn.staticfile.org/vue/2.4.2/vue.min.js" >
+		</script>
+		<script src="https://cdn.staticfile.org/axios/0.18.0/axios.min.js"></script>
+		<script src="js/pageJump.js"></script>
+		</script>
+		<style type="text/css">
+			html {
+				height: 100%
+			}
+			body {
+				height: 100%;
+				margin: 0px;
+				padding: 0px
+			}
+			#map {
+				height: 40%;
+				padding-left: 50px;
+			}
+		</style>
+
+	</head>
+
+	<body>
+		<header class="mui-bar mui-bar-nav">
+			<a class="mui-action-back mui-icon mui-icon-left-nav mui-pull-left"></a>
+		</header>
+
+		<div id="map"></div>
+		<input type="text" id="address" />
+		<div id="big_div">
+			<div class="mui-card">
+				<!--页眉，放置标题-->
+				<div class="mui-card-header mui-card-media">
+					<img src="photo/touxiang.png" />
+					<div class="mui-media-body">
+						{{person_info.d_name}}
+						<p>最近登录时间 2021-04-9 8:30</p>
+					</div>
+				</div>
+				<div class="mui-card-footer">
+					<button type="button" class="mui-btn mui-btn-success" style="width: 163px;height: 130px;"
+						v-bind:id="person_info.id" v-bind:title="orderNow_info.factory_orderid"
+						v-on:click="go_orderNow">查看当前订单</button>
+		
+					<button type="button" class="mui-btn mui-btn-primary" style="width: 162px;height: 130px;"
+						id="orderWaitList" v-on:click="go_orderWaitList">查看可接订单</button>
+				</div>
+			</div>
+			
+			<button ><a href="test.html">测试页面</a></button>
+		
+		
+			<nav class="mui-bar mui-bar-tab">
+				<a class="mui-tab-item mui-active" id="shouye" style="touch-action: none;" v-on:click="go_shouye">
+					<span class="mui-icon mui-icon-home"></span>
+					<span class="mui-tab-label">首页</span>
+				</a>
+				<a class="mui-tab-item" id="history_order" style="touch-action: none;" v-on:click="go_history_order">
+					<span class="mui-icon mui-icon-settings"></span>
+					<span class="mui-tab-label">历史订单</span>
+				</a>
+				<a class="mui-tab-item" id="aboutme" style="touch-action: none;" v-on:click="go_aboutme">
+					<span class="mui-icon mui-icon-contact"></span>
+					<span class="mui-tab-label">个人中心</span>
+				</a>
+			</nav>
+			
+		
+	</body>
+	<script type="text/javascript" src="js/jquery-1.11.1.js"></script>
+	<script type="text/javascript" charset="utf-8">
+		mui.init();
+		var map = new BMap.Map("map"); //地图显示位置
+		var gc = new BMap.Geocoder(); //将坐标转换成地址
+		var driver_id = 1;		
+
+		
+		//页面初始化时
+		$(function() {
+			//初始化地图 默认加载北京天安门
+			var point = new BMap.Point(116.40369689697, 39.914934528088);
+			map.centerAndZoom(point, 16); //初始化地图，point为中心点，缩放级别为16
+			$("#address").val("默认加载北京天安门，请点击定位按钮生效！");
+			//调用定位函数
+			getLocation();
+			DataReady();
+		})
+		
+		//手机页面初始化时
+		mui.plusReady(function () {
+			var self = plus.webview.currentWebview();
+			console.log("plus首页接收driver_id："+self.driver_id);
+		});
+		
+		//获得当前时间
+		function getTime(){
+			
+		}
+		
+		//接收司机个人信息，以及司机的当前订单号（传给当前订单页面）
+		function DataReady() {
+			vm = new Vue({
+				el: '#big_div',
+				data() {
+					return {
+						person_info: null,
+						orderNow_info: null
+					}
+				},
+				mounted() {
+					axios.post('http://192.168.43.30:8081/getDriverMsg', "d_id=" + driver_id)
+						.then(response => (this.person_info = response['data']))
+						.catch(function(error) {
+							alert("获得司机个人信息出错");
+						});
+					axios.post('http://192.168.43.30:8081/getOrderNow', "d_id=" + driver_id)
+						.then(response => (this.orderNow_info = response['data']))
+						.catch(function(error) {
+							alert("获得司机当前订单出错");
+						});
+					
+				},
+				methods: {
+					go_orderNow: function() {
+						var params = {
+									driver_id: this.person_info.id,
+									factory_orderid: this.orderNow_info.factory_orderid,
+								}
+						if (this.orderNow_info.factory_orderid != 0 && this.orderNow_info!="") {
+							goPage("pages/orderNow",params);
+						} else {
+							mui.alert("当前未接收订单");
+						}
+		
+					},
+					go_orderWaitList: function() {
+						//需要传递的参数orderWaitList
+						var params = {
+								driver_id: this.person_info.id,
+								orderNow_info:this.orderNow_info
+							}
+						//进行页面跳转
+						goPage("pages/orderWaitList",params);
+					},
+		
+					go_shouye: function() {
+						var params = {driver_id:this.person_info.id}
+						goPage("index",params);
+					},
+					go_history_order: function() {
+						var params = {driver_id:this.person_info.id}
+						goPage("pages/history_order",params);
+					},
+					go_aboutme: function() {
+						var params = {driver_id:this.person_info.id}
+						goPage("pages/aboutme",params);
+					},
+				},
+			});
+			
+			 vm.$watch('orderNow_info',function(newValue, oldValue){  
+			        vm.$nextTick(function() {  
+						if (newValue == "") {
+							
+						} else{
+							
+						}
+			        });  
+			    }) 
+		}
+		
+		
+
+		// 定位函数
+		function getLocation() {
+			//判断手机浏览器是否支持定位 
+			if (navigator.geolocation) {
+				var geolocation = new BMap.Geolocation(); //创建定位实例
+				geolocation.getCurrentPosition(showPosition, {
+					enableHighAccuracy: true
+				}); //enableHighAccuracy 要求浏览器获取最佳结果
+			} else {
+				console.log("不支持定位啦")
+				map.addControl(new BMap.GeolocationControl()); //添加定位控件 支持定位
+			}
+		}
+
+		//获取定位信息
+		function showPosition(position) {
+			var la = position.latitude;
+			var lo = position.longitude;
+
+			//新建中心点 并将地图中心移动过去
+			var centerPoint = new BMap.Point(lo, la);
+			map.panTo(centerPoint);
+			map.setCenter(centerPoint);
+			gc.getLocation(centerPoint, function(rs) {
+				var addComp = rs.addressComponents;
+				var mapAddress = addComp.province + addComp.city + addComp.district + addComp.street + addComp
+					.streetNumber;
+				$("#address").val(mapAddress)
+			});
+			//新建标注
+			var mk = new BMap.Marker(centerPoint);
+			//			mk.disableDragging(); // 不可拖拽
+			map.addOverlay(mk);
+		}
+	</script>
+
+</html>

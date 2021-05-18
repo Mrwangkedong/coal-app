@@ -1,0 +1,178 @@
+<!doctype html>
+<html>
+
+	<head>
+		<meta charset="UTF-8">
+		<title></title>
+		<meta name="viewport"
+			content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+		<link href="css/mui.min.css" rel="stylesheet" />
+		<link rel="stylesheet" type="text/css" href="fonts/iconfont.css" />
+		<link rel="stylesheet" type="text/css" href="css/block.css" />
+
+		<script src="js/mui.min.js"></script>
+		<style>
+			/*隐藏表单上下方横线*/
+
+			.mui-input-group:before {
+				background-color: rgba(255, 255, 255, 0);
+			}
+
+			.mui-input-group:after {
+				background-color: rgba(255, 255, 255, 0);
+			}
+
+			/*重定义登入按钮*/
+
+			.mui-btn-warning,
+			.mui-btn-yellow {
+				border: 1px solid #59c4ff;
+				background-color: #59c4ff;
+				margin-top: 20px;
+				padding: 7px 60px;
+				box-shadow: #9c9c9c 5px 5px 5px;
+			}
+
+			/*修改登入框小图标*/
+
+			.mui-icon-clear:before,
+			.mui-icon-close-filled:before {
+				content: '\e623';
+				color: #28D0DD;
+				font-size: 20px;
+			}
+
+			.mui-icon-eye:before {
+				content: '\e724';
+				color: #28D0DD;
+				font-size: 24px;
+			}
+
+			.mui-content {
+				background: url(photo/loginDown.png) no-repeat;
+				height: 100%;
+				position: absolute;
+				bottom: 0px;
+				width: 100%;
+				background-position-y: bottom;
+			}
+		</style>
+	</head>
+
+	<body>
+		<div class="mui-content">
+			<!--顶部颜色快-->
+			<div class="lod-div1">
+				<img class="lod-img" src="photo/sel.png" alt="MUI登入源码 扁平移动端UI界面 MUI键盘顶起背景图片" />
+			</div>
+			<!--表单-->
+			<form class="mui-input-group lod-form">
+				<h3>登入</h3>
+				<label class="lod-label ma20">账户手机号</label>
+				<!--输入框-->
+				<div class="mui-input-row ">
+					<input type="text" class="mui-input-clear " id="phoneNum">
+				</div>
+				<label class="lod-label ma20">账户密码</label>
+				<!--输入框-->
+				<div class="mui-input-row ">
+					<input type="password" class="mui-input-password" id="password">
+				</div>
+				<!--忘记密码-->
+				<div class="lod-wjmm">忘记密码?</div>
+			</form>
+			<!--登入按钮-->
+			<center>
+				<button type="button" class="mui-btn mui-btn-warning " data-loading-text="登录中">登入</button>
+			</center>
+			<!--社交登入-->
+			<div class="mui-row mui-text-center ma40">
+				<!--左侧横线-->
+				<div class="mui-col-sm-4 mui-col-xs-4">
+					<hr class="lod-hr mui-pull-right" />
+				</div>
+				<!--登入文字-->
+				<div class="mui-col-sm-4 mui-col-xs-4 lod-sjuser">
+					快来加入我们
+				</div>
+				<!--右侧横线-->
+				<div class="mui-col-sm-4 mui-col-xs-4">
+					<hr class="lod-hr mui-pull-left" />
+				</div>
+				<div class="mui-col-sm-12 mui-col-xs-12 lod-sjuser">
+					还有注册账号？<label class="lod-register" onclick="goRegister()">马上注册</label>
+				</div>
+			</div>
+
+		</div>
+		<script src="js/jquery-3.4.1.min.js"></script>
+		<script type="text/javascript">
+			mui.init();
+			// 登入按钮事件
+			mui(document.body).on('tap', '.mui-btn', function(e) {
+				mui(this).button('loading');
+				setTimeout(function() {
+					mui(this).button('reset');
+				}.bind(this), 2000);
+				Login();
+			});
+
+
+			function Login() {
+				let phoneNum = document.getElementById("phoneNum").value;
+				let password = document.getElementById("password").value;
+
+				$.ajax('http://192.168.43.30:8081/DriverLogin', {
+					data: {
+						phoneNum: phoneNum,
+						password: password,
+					},
+					dataType: 'json', //服务器返回json格式数据
+					type: 'post', //HTTP请求类型
+					timeout: 10000, //超时时间设置为10秒；
+					success: function(data) {
+						//接收到的登录结果
+						console.log(data);
+						if (data.code === 1) {
+							mui.toast("登陆成功");
+							localStorage.setItem("driver_id",data.d_id);   //将司机id作为缓存存入
+							location.replace("index.html");
+						} else {
+							if (data.code === 2) {
+								mui.toast("账号正在申请");
+							} else {
+								mui.toast('账号不存在/密码错误');
+							}
+						}
+					},
+					error: function(xhr, type, errorThrown) {
+						mui.toast('网路出现错误，请稍后重试');
+					}
+				});
+
+
+			}
+			
+			function goRegister(){
+				location.replace("regist.html");
+			}
+
+
+
+			// 设置手机状态栏背景色
+			function plusReady() {
+				// 设置系统状态栏背景为蓝色
+				plus.navigator.setStatusBarBackground("#59c4ff");
+				// 设置系统状态栏样式为浅色文字7
+				plus.navigator.setStatusBarStyle("UIStatusBarStyleBlackOpaque");
+			}
+
+			if (window.plus) {
+				plusReady();
+			} else {
+				document.addEventListener("plusready", plusReady, false);
+			}
+		</script>
+	</body>
+
+</html>

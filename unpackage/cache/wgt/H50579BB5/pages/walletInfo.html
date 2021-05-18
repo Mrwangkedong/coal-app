@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+		<link href="../css/mui.min.css" rel="stylesheet" />
+		<link href="../fonts/iconfont.css" rel="stylesheet" />
+		<script type="text/javascript" src="../js/pageJump.js"></script>
+		<script src="https://cdn.staticfile.org/vue/2.4.2/vue.min.js"></script>
+		<script src="https://cdn.staticfile.org/axios/0.18.0/axios.min.js"></script>
+		<script src="../js/mui.min.js"></script>
+		<title></title>
+	</head>
+	<body>
+		<!-- 头部信息 -->
+		<div class="head">
+			<header class="mui-bar mui-bar-nav">
+				<a class="mui-action-back mui-icon mui-icon-left-nav mui-pull-left" href="aboutme.html"></a>
+				<h1 class="mui-title">我的钱包</h1>
+			</header>
+		</div>
+		<br /><br />
+		
+		
+		<!-- 具体内容 -->
+		<!-- 九宫格 -->
+		<ul class="mui-table-view mui-grid-view mui-grid-9" id="big_ul">
+			<li class="mui-table-view-cell mui-media mui-col-xs-6">
+				<a href="#">
+					<h2 id="yue">{{wallet_info.wallet_money}}</h2>
+					<div class="mui-media-body" >当前余额（￥）</div>
+				</a>
+			</li>
+			<li class="mui-table-view-cell mui-media mui-col-xs-6" v-on:click="go_walletBillInfo">
+				<a href="#">
+					<span class="mui-icon mui-icon-list"></span>
+					<div class="mui-media-body">查看历史账单</div>
+				</a>
+			</li>
+			<li class="mui-table-view-cell mui-media mui-col-xs-6" >
+				<a href="#">
+					<span class="mui-icon mui-icon-paperclip"></span>
+					<div class="mui-media-body">充值</div>
+				</a>
+			</li>
+			<li class="mui-table-view-cell mui-media mui-col-xs-6" v-on:click="tixian">
+				<a href="#">
+					<span class="mui-icon mui-icon-paperclip"></span>
+					<div class="mui-media-body">提现</div>
+				</a>
+			</li>
+			<li class="mui-table-view-cell mui-media mui-col-xs-12" v-on:click="bankcard">
+				<a href="#" id="bank_card">
+					<span class="mui-icon mui-icon-plus"></span>
+					<div class="mui-media-body">绑定银行卡</div>
+				</a>
+			</li>
+		</ul>
+	</body>
+</html>
+
+
+<script>
+	mui.init();
+	
+	mui.plusReady(function() {
+		var self = plus.webview.currentWebview();
+		var driver_id = self.driver_id;
+		console.log("walletInfo.html收到driver_id：" + driver_id);
+	})
+	
+	
+	dataReady(1);
+	
+	//接收数据
+	function dataReady(d_id){
+		new Vue({
+			el:"#big_ul",
+			data() {
+				return {
+					wallet_info: null
+				}
+			},
+			mounted() {
+				axios.post('http://192.168.43.30:8081/getUserWalletInfo', "user_id=" + d_id +"&user_state="+1)
+				.then(response => (this.wallet_info = response['data']))
+				.catch(function(error) {
+					alert("获得司机钱包信息出错");
+				});
+			},
+			methods:{
+				go_walletBillInfo:function(){
+					var params = {user_id:this.wallet_info.user_id}
+					goPage("walletBillInfo",params);
+				},
+				tixian:function(){
+					if(this.wallet_info.bcard_name == null || this.wallet_info.bcard_name == ""){
+						mui.toast("请先绑定银行卡");
+					}else{
+						walletTiXian(this.wallet_info.wallet_money);
+					}
+				},
+				bankcard:function(){
+					if(this.wallet_info.bcard_name == null || this.wallet_info.bcard_name == ""){
+						bankcard(this.wallet_info.user_id);
+					}else{
+						mui.toast("已绑定银行卡");
+					}
+				},
+			}
+		});
+	}
+	
+	//绑定银行卡
+	function bankcard(user_id){
+		mui.confirm(
+			'输入银行卡账号<input type="text" id="number" /><br/>输入持卡人姓名<input type="text" id="name" /><br/>输入持卡人身份证号码<input type="text" id="pcardNum" />',
+			'银行卡绑定', null,
+			function(e) {
+				if (e.index == 1) {
+					var number = document.getElementById("number").value;
+					var name = document.getElementById("name").value;
+					var pcardNum = document.getElementById("pcardNum").value;
+					mui.ajax('http://192.168.43.30:8081/editWalletBcardInfo',{
+						data:{
+							bcard_name:name,
+							bcard_pcarNum:pcardNum,
+							bacrd_number:number,
+							user_id:user_id,
+							wallet_state:1
+						},
+						dataType:'json',//服务器返回json格式数据
+						type:'post',//HTTP请求类型
+						timeout:10000,//超时时间设置为10秒；
+						success:function(data){
+							if (data == 1) {
+								mui.toast("银行卡绑定成功");
+								
+								//进行页面刷新
+								location.reload();
+							} else{
+								if(data == 2){
+									mui.toast("银行卡信息格式错误");
+								}else{
+									mui.toast("银行卡绑定失败");
+								}
+							}
+						},
+						error:function(xhr,type,errorThrown){
+							mui.toast("银行卡绑定失败");
+						}
+					});
+				} else {
+					mui.toast("取消绑定");
+				}
+		
+			}, 'div');
+	}
+	
+	
+	// 提现金额
+	function walletTiXian(money){
+		mui.confirm(
+			'输入提现金额<input type="text" id="mm" />',
+			'提现', null,
+			function(e) {
+				if (e.index == 1) {
+					var mm = Number(document.getElementById("mm").value);
+					if (mm > money) {
+						mui.toast('输入金额错误！');
+					} else{
+						document.getElementById("yue").innerHTML = (money - mm);
+						var res = walletTiXian2(1,mm);
+						if(res == 1){    //如果提现成功，进行页面刷新
+							location.reload();
+						}
+					}
+				} else {
+					mui.toast("取消修改");
+				}
+		
+			}, 'div');
+	}
+	
+	function walletTiXian2(user_id,mm){
+			var res = 0;
+			
+			mui.ajax({
+				url : "http://192.168.43.30:8081/addUserBill",
+				async: false,
+				data: {
+					bill_money: Number(mm),
+					bill_state: 1,
+					bill_type:0,
+					user1_id:1,
+					user2_name:"提现"
+				},
+				dataType: 'json', //服务器返回json格式数据  
+				type: 'post', //HTTP请求类型  
+				timeout: 10000, //超时时间设置为10秒；  
+				success: function(response) {
+					if (response == 1) {
+						mui.toast("提现成功");
+						res = 1;
+					} else {
+						mui.toast("提现失败");
+						res = 0;
+					}
+				},
+				error: function(xhr, type, errorThrown) {
+					mui.toast("提现失败");
+					res = 0;
+				}
+			});
+			
+			return res;
+	}
+	
+
+</script>

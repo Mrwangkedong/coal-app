@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport"
+			content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+		<link href="../css/mui.min.css" rel="stylesheet" />
+		<link href="../fonts/iconfont.css" rel="stylesheet" />
+		<script src="../js/pageJump.js"></script>
+		<script src="../js/sessionCheak.js"></script>
+		<script src="https://cdn.staticfile.org/vue/2.4.2/vue.min.js"></script>
+		<script src="https://cdn.staticfile.org/axios/0.18.0/axios.min.js"></script>
+		<script src="../js/mui.min.js"></script>
+		<title></title>
+	</head>
+	<body>
+		<!-- 待接订单详情 -->
+		<div class="head">
+			<header class="mui-bar mui-bar-nav">
+				<a class="mui-action-back mui-icon mui-icon-left-nav mui-pull-left" href="index.html"></a>
+				<h1 class="mui-title">订单详情</h1>
+			</header>
+		</div>
+		<br /><br />
+
+
+		<!-- 具体内容 -->
+		<!-- 九宫格 -->
+		<ul class="mui-table-view mui-grid-view mui-grid-9" id="big_ul">
+			<li class="mui-table-view-cell mui-media mui-col-xs-6">
+				<a href="#">
+					<h3>{{list.ft_name}}</h3>
+					<div class="mui-media-body">买家工厂</div>
+				</a>
+			</li>
+			<li class="mui-table-view-cell mui-media mui-col-xs-6">
+				<a href="#">
+					<h3>{{list.ff_name}}</h3>
+					<div class="mui-media-body">卖家工厂</div>
+				</a>
+			</li>
+			<li class="mui-table-view-cell mui-media mui-col-xs-6">
+				<a href="#">
+					<h3 style="font-size: 18px;">{{list.facOrderInfo.order_startdate.slice(0,16)}}</h3>
+					<div class="mui-media-body">开始时间</div>
+				</a>
+			</li>
+			<li class="mui-table-view-cell mui-media mui-col-xs-6">
+				<a href="#">
+					<h2>{{list.facOrderInfo.order_carclass}}</h2>
+					<div class="mui-media-body">车辆类型</div>
+				</a>
+			</li>
+			<li class="mui-table-view-cell mui-media mui-col-xs-6">
+				<a href="#">
+					<h2>{{list.facOrderInfo.order_transporttime}}</h2>
+					<div class="mui-media-body"> 运输时间（小时）</div>
+				</a>
+			</li>
+			<li class="mui-table-view-cell mui-media mui-col-xs-6">
+				<a href="#">
+					<h2>{{list.facOrderInfo.order_goodclass}}</h2>
+					<div class="mui-media-body">煤炭种类</div>
+				</a>
+			</li>
+			<li class="mui-table-view-cell mui-media mui-col-xs-6">
+				<a href="#">
+					<h2>{{carDefulWeight}}</h2>
+					<div class="mui-media-body">车辆载重（吨）</div>
+				</a>
+			</li>
+			<li class="mui-table-view-cell mui-media mui-col-xs-6">
+				<a href="#">
+					<h2>{{list.facOrderInfo.order_goodprice}}</h2>
+					<div class="mui-media-body">单价（￥/吨）</div>
+				</a>
+			</li>
+			<li class="mui-table-view-cell mui-media mui-col-xs-12" v-on:click="go_mapShow">
+				<a href="#">
+					<span class="mui-icon mui-icon-map"></span>
+					<div class="mui-media-body">查看地图信息</div>
+				</a>
+			</li>
+			<li class="mui-table-view-cell mui-media mui-col-xs-12" v-on:click="go_shouye">
+				<a href="#">
+					<span class="mui-icon mui-icon-compose"></span>
+					<div class="mui-media-body">点击接单</div>
+				</a>
+			</li>
+
+		</ul>
+
+	</body>
+</html>
+
+<script>
+	mui.init()
+	var driver_id = Number(localStorage.driver_id); //从缓冲中读取到driver_id	
+	mui.plusReady(function() {
+		//用户检查
+		sessionCheck();
+		//应该传过来一个，用户id，facorder_id
+		var self = plus.webview.currentWebview();
+		var driver_id = self.driver_id;
+		var fac_orderid = self.fac_orderid;
+		console.log("待接受订单详情收到driver_id：" + driver_id);
+		console.log("待接受订单详情收到fac_orderid：" + fac_orderid);
+		dataReady(driver_id, fac_orderid)
+	})
+
+
+	function dataReady(driver_id, fac_orderid) {
+		new Vue({
+			el: "#big_ul",
+			data() {
+				return {
+					list: null,
+				}
+			},
+			mounted() {
+				// 获得订单的具体信息
+				axios.post('http://192.168.43.30:8081/getFacOrderInfo', "fac_orderid=" + fac_orderid)
+					.then(response => (this.list = response['data']))
+					.catch(function(error) {
+						alert("获得订单的具体信息出错");
+					});
+			},
+			methods: {
+				go_mapShow: function() {
+					var params = {};
+					goPage("routeshow", params);
+				},
+				go_shouye: function() {
+					mui.confirm(
+						'是否接受订单',
+						'订单确认', ['取消', '确定'],
+						function(e) {
+							if (e.index == 1) {
+								orderGet(driver_id, fac_orderid);
+							} else {
+								mui.toast("取消");
+							}
+
+						}, 'div');
+				},
+			},
+			computed: {
+				carDefulWeight: function() {
+					console.log(String(this.list.facOrderInfo.order_carclass));
+					if (String(this.list.facOrderInfo.order_carclass) == "2") {
+						return 45;
+					} else {
+						return 80;
+					}
+				}
+			}
+		});
+	}
+
+
+	function orderGet(driver_id, fac_orderid, RightPayPassword) {
+
+		mui.ajax('http://192.168.43.30:8081/addDriOrderInfo', {
+			data: {
+				driver_id: driver_id,
+				factory_orderid: fac_orderid,
+			},
+			dataType: 'json', //服务器返回json格式数据
+			type: 'post', //HTTP请求类型
+			timeout: 10000, //超时时间设置为10秒；
+			success: function(data) {
+				if (data === 1) {
+					alert("接收订单成功！");
+					var params = {
+						driver_id: driver_id
+					};
+					goPage2("../index", params)
+				} else if (data === 2) {
+					alert("当前订单车辆已满");
+				} else if (data === 3) {
+					alert("支付保证金失败，当前余额不足");
+				} else if (data === 4) {
+					alert("已存在订单，请先完成！")
+				} else if (data === 5) {
+					alert("支付保证金失败，当前未绑定银行卡");
+				} else if (data === 6) {
+					alert("车辆类型不符合");
+				}
+			},
+			error: function(xhr, type, errorThrown) {
+				mui.toast("失败，网络原因......")
+			}
+		});
+
+
+	}
+</script>

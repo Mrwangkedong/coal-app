@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport"
+			content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+		<link href="../css/mui.min.css" rel="stylesheet" />
+		<link href="../fonts/iconfont.css" rel="stylesheet" />
+		<script src="https://cdn.staticfile.org/vue/2.4.2/vue.min.js"></script>
+		<script src="https://cdn.staticfile.org/axios/0.18.0/axios.min.js"></script>
+		<script src="../js/mui.min.js"></script>
+		<title></title>
+	</head>
+	<body>
+		<!-- 头部信息 -->
+		<div class="head">
+			<header class="mui-bar mui-bar-nav">
+				<a class="mui-action-back mui-icon mui-icon-left-nav mui-pull-left" href="aboutme.html"></a>
+				<h1 class="mui-title">个人信息</h1>
+			</header>
+		</div>
+		<br /><br />
+
+
+		<!-- 具体内容 -->
+		<!-- 九宫格 -->
+		<ul class="mui-table-view mui-grid-view mui-grid-9" id="big_ul">
+			<li class="mui-table-view-cell mui-media mui-col-xs-6">
+				<a href="#">
+					<h3>{{person_info.d_phonenum}}</h3>
+					<div class="mui-media-body">手机号码</div>
+				</a>
+			</li>
+			<li class="mui-table-view-cell mui-media mui-col-xs-6" v-on:click="editPassword">
+				<a href="#">
+					<span class="mui-icon mui-icon-compose"></span>
+					<div class="mui-media-body">更改密码</div>
+				</a>
+			</li>
+			<li class="mui-table-view-cell mui-media mui-col-xs-6" v-on:click="editPayPassword">
+				<a href="#">
+					<span class="mui-icon mui-icon-refresh"></span>
+					<div class="mui-media-body">更改支付密码</div>
+				</a>
+			</li>
+			<li class="mui-table-view-cell mui-media mui-col-xs-6" v-on:click="editPhoneNum">
+				<a href="#">
+					<span class="mui-icon mui-icon-refreshempty"></span>
+					<div class="mui-media-body">更改手机号码</div>
+				</a>
+			</li>
+		</ul>
+		
+
+	</body>
+</html>
+
+<script>
+	mui.init();
+	
+
+	mui.plusReady(function() {
+		var self = plus.webview.currentWebview();
+		var driver_id = self.driver_id;
+		console.log("personInfo.html收到driver_id：" + driver_id);
+	})
+	
+	dataReady(1);
+
+	function dataReady(driver_id) {
+		new Vue({
+			el: "#big_ul",
+			data() {
+				return {
+					person_info: null
+				}
+			},
+			mounted() {
+				axios.post('http://192.168.43.30:8081/getDriverMsg', "d_id=" + driver_id)
+					.then(response => (this.person_info = response['data']))
+					.catch(function(error) {
+						alert("获得司机个人信息出错");
+					});
+			},
+			methods: {
+				editPassword: function() {
+					var res = editPassword(driver_id, this.person_info.d_password);
+					//将this中的数据进行修改
+					this.person_info.d_password = res;
+				},
+				editPayPassword: function() {
+					editPayPassword();
+				},
+				editPhoneNum: function() {
+					editPhoneNum();
+				}
+			}
+		});
+	}
+
+	//密码修改函数
+	function editPassword(driver_id, RightOldPwb) {
+		var resNewPwb = "";
+		mui.confirm(
+			'输入旧密码<input type="password" id="oldpwb" /><br/>输入新密码<input type="password" id="newpwb"<br/>重复输入新密码<input type="password" id="newpwb2" />',
+			'密码修改', null,
+			function(e) {
+				if (e.index == 1) {
+					var oldPassword = document.getElementById("oldpwb").value;
+					var newPassword1 = document.getElementById("newpwb").value;
+					var newPassword2 = document.getElementById("newpwb2").value;
+					if (RightOldPwb != oldPassword) {
+						mui.toast("密码修改失败，旧密码错误，请重新进行！");
+					} else {
+						if (newPassword1 == newPassword2) {
+							var res = newPassword(driver_id, newPassword2);
+							if (res == 1) {
+								resNewPwb = newPassword1;
+							}
+						} else {
+							mui.toast("两次新密码不一致，请重新进行！");
+						}
+					}
+				} else {
+					mui.toast("取消修改");
+				}
+
+			}, 'div');
+
+		return resNewPwb;
+	}
+
+	//修改支付密码
+	function editPayPassword(RightOldPayPwb) {
+		mui.confirm(
+			'输入旧密码<input type="password" id="oldpwb" /><br/>输入新密码<input type="password" id="newpwb"<br/>重复输入新密码<input type="password" id="newpwb2" />',
+			'支付密码修改', null,
+			function(e) {
+				if (e.index == 1) {
+					var oldPassword = document.getElementById("oldpwb").value;
+					var newPassword1 = document.getElementById("newpwb").value;
+					var newPassword2 = document.getElementById("newpwb2").value;
+					if (RightOldPayPwb != oldPassword) {
+						mui.toast("密码修改失败，旧密码错误，请重新进行！");
+					} else {
+						if (newPassword1 == newPassword2) {
+							alert("修改成功");
+							dataReady();
+						} else {
+							mui.toast("两次新密码不一致，请重新进行！");
+						}
+					}
+				} else {
+					mui.toast("取消修改");
+				}
+
+			}, 'div');
+	}
+
+	//修改手机号码
+	function editPhoneNum() {
+		mui.confirm(
+			'输入旧手机号<input type="text" id="oldpwb" /><br/>输入新手机号<input type="text" id="newpwb"<br/>重复输入新手机号<input type="text" id="newpwb2" />',
+			'手机号修改', null,
+			function(e) {
+				if (e.index == 1) {
+					var oldPassword = document.getElementById("oldpwb").value;
+					var newPassword1 = document.getElementById("newpwb").value;
+					var newPassword2 = document.getElementById("newpwb2").value;
+					if (RightOldPayPwb != oldPassword) {
+						mui.toast("手机号修改失败，手机号错误，请重新进行！");
+					} else {
+						if (newPassword1 == newPassword2) {
+							alert("修改成功")
+						} else {
+							mui.toast("两次新手机号不一致，请重新进行！");
+						}
+					}
+				} else {
+					mui.toast("取消修改");
+				}
+
+			}, 'div');
+	}
+
+	function newPassword(driver_id, newPwd) {
+		var res = 0;
+		mui.ajax({
+			url: "http://192.168.43.30:8081/editDriverPwb",
+			async: false,
+			data: {
+				d_id: driver_id,
+				newPassword: newPwd
+			},
+			dataType: 'json', //服务器返回json格式数据  
+			type: 'post', //HTTP请求类型  
+			timeout: 10000, //超时时间设置为10秒；  
+			success: function(response) {
+				if (response == 1) {
+					mui.toast("修改成功");
+					res = 1;
+				} else {
+					mui.toast("修改失败");
+					res = 0;
+				}
+			},
+			error: function(xhr, type, errorThrown) {
+				mui.toast("返回失败");
+				res = 0;
+			}
+		});
+
+		return res;
+	}
+</script>

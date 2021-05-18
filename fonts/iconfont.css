@@ -1,0 +1,25 @@
+@font-face {
+  font-family: "iconfont";   
+  src: url('iconfont.ttf') format('truetype')
+}
+
+.iconfont {
+  font-family: "iconfont" !important;
+  font-size: 16px;
+  font-style: normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.icon-chepai:before {
+  content: "\e621";
+}
+
+.icon-huoche:before {
+  content: "\e647";
+}
+
+.icon-jiashizheng:before {
+  content: "\e61a";
+}
+

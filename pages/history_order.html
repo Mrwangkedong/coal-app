@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport"
+			content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+		<link href="../css/mui.min.css" rel="stylesheet" />
+		<script src="../js/mui.min.js"></script>
+		<script src="../js/pageJump.js"></script>
+		<script src="https://cdn.staticfile.org/vue/2.4.2/vue.min.js"></script>
+		<script src="https://cdn.staticfile.org/axios/0.18.0/axios.min.js"></script>
+	</head>
+	<body>
+
+		<!--下拉刷新容器-->
+		<div id="pullrefresh" class="mui-content mui-scroll-wrapper">
+			<div class="mui-scroll">
+				
+				<!-- 订单表 -->
+				<ul class="mui-table-view" id="big_ul">
+				
+					<li class="mui-table-view-cell mui-media" v-for="list in lists['data']" v-bind:id="list.order_id"
+						v-bind:title="list.order_id">
+				
+						<p class="mui-media-object mui-pull-right">￥{{list.order_money}}</p>
+						<div class="mui-media-body">
+							{{list.order_date.slice(0,10)}}
+							<p class='mui-ellipsis'>{{list.ff_name}}-->{{list.ft_name}}</p>
+						</div>
+				
+					</li>
+				</ul>
+				
+			</div>
+		</div>
+
+
+	</body>
+</html>
+
+<script>
+	mui.init({
+		pullRefresh: {
+			container: '#pullrefresh',
+			down: {
+				style: 'circle',
+				callback: pulldownRefresh
+			},
+		}
+	});
+	
+	
+
+	mui.plusReady(function() {
+		var self = plus.webview.currentWebview(); //获得当前页面的对象
+		var driver_id = self.driver_id;
+		console.log("历史订单页driver_id："+driver_id);
+	})
+	
+	dataReady();
+
+
+	function dataReady() {
+		var vm = new Vue({
+			el: '#big_ul',
+			data() {
+				return {
+					lists: null
+				}
+			},
+			mounted() {
+				axios.post('http://192.168.43.30:8081/getDriOrderList', "d_id=" + 1)
+					.then(response => (this.lists = response))
+					.catch(function(error) {
+						alert(2);
+					});
+			},
+		});
+
+		// 等待lists加载完，添加监听
+		vm.$watch('lists', function() {
+			var Lis = document.getElementsByClassName('mui-table-view-cell mui-media');
+			for (var i = 0; i < Lis.length; i++) {
+				Lis[i].addEventListener('tap', function() {
+					var params = {
+						order_id:this.id,
+						factory_orderid:this.title,
+					}
+					goPage2("orderInfo",params)
+				})
+			}
+		})
+	}
+	
+	
+	/**
+	 * 下拉刷新具体业务实现
+	 */
+	function pulldownRefresh() {
+		setTimeout(function() {
+			dataReady();
+			mui('#pullrefresh').pullRefresh().endPulldownToRefresh();
+			mui.toast("加载完成");
+		}, 1500);
+	}
+</script>
